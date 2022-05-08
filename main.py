@@ -16,8 +16,10 @@ chats_input = ['1test','Test3','Banana','😁'] #chats a extraer
 chats_output = ['1test output']  #chats a enviar
 
 async def main():
-    input= chat_to_id(chats_input)
-    output = chat_to_id(chats_output)
+    dialogs = await client.get_dialogs()
+
+    input= await chat_to_id(chats_input)
+    output = await chat_to_id(chats_output)
 
     @client.on(events.NewMessage(chats=input))
     async def my_event_handler(event):
@@ -25,7 +27,7 @@ async def main():
         msg = event.message
 
         for chat,id in zip(chats_output,output):
-                print(f'enviando a {chat}, id: {id}')
+                print(f'enviando a {chat}, id: {id.id}')
                 await client.send_message(id,msg)
 
 print(f'{"-"*50} \n{time.asctime()} - Bot iniciado.\n{"-"*50}')
