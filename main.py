@@ -1,5 +1,12 @@
 from telethon import TelegramClient, events
 import time, configparser
+import pandas as pd
+
+try:
+    df = pd.read_excel('./chatsdb.xlsx')
+except:
+    print('NO HAY BASE DE DATOS')
+    quit()
 
 SESSION_NAME = "test"
 
@@ -12,24 +19,29 @@ api_hash = config['TELEGRAM_KEYS']['api_hash']
 
 client = TelegramClient(SESSION_NAME, api_id,  api_hash, sequential_updates = True).start(phone=config['TELEGRAM_KEYS']['phone'])
 
-chats_input = ['1test','Test3','Banana','😁'] #chats a extraer
-chats_output = ['1test output']  #chats a enviar
+chats_input, chats_output= df['Chat input'].to_list() , df['Chat output'].to_list()
+chats_output = [chat.split(';') for chat in chats_output]
+
 
 async def main():
     dialogs = await client.get_dialogs()
 
-    input= await chat_to_id(chats_input)
-    output = await chat_to_id(chats_output)
+    _input= await chat_to_id(chats_input)
+    _input = [x.id for x in _input]
 
-    @client.on(events.NewMessage(chats=input))
+    _output = [await chat_to_id(chat) for chat in chats_output]
+    
+    
+    chat_dict = dict(zip(_input,_output))
+
+    @client.on(events.NewMessage(chats=_input))
     async def my_event_handler(event):
 
         msg = event.message
 
-        for chat,id in zip(chats_output,output):
-                print(f'enviando a {chat}, id: {id.id}')
-                await client.send_message(id,msg)
-
+        for output in chat_dict[event.peer_id.channel_id]:
+            await client.send_message(output,msg)
+        
 print(f'{"-"*50} \n{time.asctime()} - Bot iniciado.\n{"-"*50}')
 
 async def chat_to_id(_chats):
