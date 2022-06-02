@@ -21,37 +21,45 @@ async def main():
     try:
         print('---------Generando IDs----------')
 
-        db=pd.read_excel('chatsdb.xlsx')
+        db=pd.read_csv('./chatsdb.csv')
         _inputs ,_outputs = db['Chat input'].to_list(), db['Chat output'].to_list()
-        _inputs ,_outputs= [_chat.split(';') for _chat in _inputs] ,[_chat.split(';') for _chat in _outputs]
-        db['ID input'],db['ID output'] = await chat_to_id(_inputs) ,await chat_to_id(_outputs)
-        db.to_excel('./chatsdb.xlsx',index=False)
+        print(_inputs)
+        _inputs = [str(chat).split(";") for chat in _inputs]
+        _outputs = [str(chat).split(";") for chat in _outputs]
+        print('----Inputs----')
+        db['ID input'] = await chat_to_id(_inputs)
+        print('----Ouputs----')
+        db['ID output'] =await chat_to_id(_outputs)
+        db.to_csv('./chatsdb.csv',index=False)
 
     except:
-
-        print('no hay chatsdb.excel, creando uno vacio. Si por el contrario existia antes de correr el programa significa q hubo un error')
+        print('No hay chatsdb.csv, creando uno vacio. Si por el contrario existia antes de correr el programa significa q hubo un error')
         temp = {'Chat input':[] , 'Chat output':[], 'ID input':[], 'ID output':[]}
         df = pd.DataFrame(temp)
         df.dropna()
-        df.to_excel('./chatsdb.xlsx',index=False)
+        df.to_csv('./chatsdb.csv',index=False)
 
     print('------------LISTO------------')
     quit()
 
 
-async def chat_to_id(_chats):
-    chats = []
-    for chat in _chats:
-        try:
-            for _chat in chat:
-                entety =await client.get_peer_id(_chat)
+async def chat_to_id(value):
+    print(f'---  {value}')
+    out = []
+    for _chats in value:
+        temp = []
+        for chat in _chats:
+            try:
+                entety=await client.get_peer_id(chat)
                 entety=await client.get_entity(entety)
-                chats.append(str(entety.id))
-        except:
-            print(f'No se pudo sacar entidad {chat}')
-            chats.append('')
-    return ';'.join(chats)
-
+                temp.append(str(entety.id))
+            except:
+                print(f'No se pudo sacar entidad {chat}')
+                temp.append('')
+        temp = ";".join(temp)
+        out.append(temp)
+    print(len(value),len(out))
+    return out
 
 with client:
     client.loop.run_until_complete(main())
